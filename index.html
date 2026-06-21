@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexaVault — Courses &amp; Digital Products</title>
+<meta name="description" content="NexaVault — Learn how to create, launch and sell digital products online. Browse courses and digital products.">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+<!-- PayPal -->
+<script src="https://www.paypal.com/sdk/js?client-id=BAAYkcYGn8J0uvmV8WSXvJA9UqWLBexojHmAxhopbC-JQVsIKOyfRQb3_48uec9HC0Kxd8S3G1LdydBi5A&currency=USD" defer></script>
+
+<!-- Razorpay -->
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+
+<!-- EmailJS (sends the purchase-confirmation email after server-verified payment) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
+
+<!-- Fonts & Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+:root{
+  --bg:#07070F;--bg2:#0D0D1A;--bg3:#111124;
+  --surf:#13132A;--surf2:#1A1A35;
+  --brd:rgba(139,92,246,.18);--brd2:rgba(139,92,246,.35);
+  --v:#8B5CF6;--vl:#A78BFA;--vd:#6D28D9;
+  --gold:#F59E0B;--gld:#FCD34D;
+  --grn:#10B981;--red:#EF4444;
+  --t1:#F1F5F9;--t2:#94A3B8;--t3:#64748B;
+  --r:14px;--rl:22px;
+  --fd:'Syne',sans-serif;--fb:'Inter',sans-serif;
+  --tr:all .28s cubic-bezier(.4,0,.2,1);
+  --sh:0 8px 40px rgba(139,92,246,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t1);font-family:var(--fb);font-size:16px;overflow-x:hidden;line-height:1.65}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+img{max-width:100%;display:block}
+textarea{font-family:inherit}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--vd);border-radius:99px}
+.gt{background:linear-gradient(135deg,var(--vl),var(--gld));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* AUTH */
+#authScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse 70% 60% at 50% 30%,rgba(109,40,217,.25) 0%,transparent 70%),var(--bg);padding:20px}
+.auth-card{background:var(--surf);border:1px solid var(--brd2);border-radius:var(--rl);padding:44px 40px;width:100%;max-width:420px;box-shadow:0 40px 100px rgba(0,0,0,.6)}
+.auth-logo{font-family:var(--fd);font-size:26px;font-weight:800;text-align:center;margin-bottom:6px}
+.auth-tagline{text-align:center;color:var(--t3);font-size:13px;margin-bottom:32px}
+.auth-tabs{display:flex;background:var(--bg2);border-radius:10px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:9px;border-radius:8px;font-size:14px;font-weight:600;color:var(--t2);transition:var(--tr);text-align:center;cursor:pointer}
+.auth-tab.active{background:var(--surf);color:var(--t1);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.auth-field{margin-bottom:16px}
+.auth-field label{display:block;font-size:13px;font-weight:600;color:var(--t2);margin-bottom:7px}
+.auth-field input{width:100%;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:12px 16px;color:var(--t1);font-size:14px;font-family:var(--fb);outline:none;transition:var(--tr)}
+.auth-field input:focus{border-color:var(--v)}
+.auth-btn{width:100%;background:linear-gradient(135deg,var(--v),var(--vd));color:#fff;padding:14px;border-radius:10px;font-size:15px;font-weight:700;font-family:var(--fb);box-shadow:0 6px 24px rgba(139,92,246,.4);transition:var(--tr);margin-top:4px}
+.auth-btn:hover{transform:translateY(-2px)}
+.auth-or{text-align:center;color:var(--t3);font-size:12px;font-weight:700;letter-spacing:.08em;margin:18px 0;display:flex;align-items:center;gap:10px}
+.auth-or::before,.auth-or::after{content:'';flex:1;height:1px;background:var(--brd)}
+.auth-google{width:100%;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:13px;font-size:14px;font-weight:600;color:var(--t1);display:flex;align-items:center;justify-content:center;gap:10px;transition:var(--tr)}
+.auth-google:hover{border-color:var(--brd2);background:var(--surf2)}
+.auth-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:14px;display:none}
+.auth-pane{display:none}.auth-pane.active{display:block}
+
+/* NAV */
+#mainApp{display:none}
+nav{position:sticky;top:0;z-index:100;background:rgba(7,7,15,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--brd);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:66px}
+.nav-logo{font-family:var(--fd);font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--vl),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer}
+.nav-right{display:flex;align-items:center;gap:14px}
+.nav-links{display:flex;align-items:center;gap:20px}
+.nav-links a{font-size:13px;font-weight:500;color:var(--t2);transition:var(--tr);white-space:nowrap}
+.nav-links a:hover{color:var(--t1)}
+.user-pill{display:flex;align-items:center;gap:10px;background:var(--surf);border:1px solid var(--brd);border-radius:99px;padding:6px 14px 6px 6px;cursor:pointer}
+.user-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--v),var(--vd));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;overflow:hidden}
+.user-av img{width:100%;height:100%;object-fit:cover}
+.user-name{font-size:13px;font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-admin{background:linear-gradient(135deg,var(--gold),var(--gld));color:#000;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:800;display:none;align-items:center;gap:6px}
+.btn-admin.show{display:flex}
+.btn-logout{font-size:13px;font-weight:600;color:var(--t2);padding:8px 14px;border-radius:8px;border:1px solid var(--brd)}
+.btn-logout:hover{color:var(--t1);border-color:var(--brd2)}
+@media(max-width:900px){.nav-links{display:none}.user-name{display:none}}
+
+/* SECTIONS COMMON */
+section{padding:90px 24px}
+.container{max-width:1100px;margin:0 auto}
+.sec-label{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--vl);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
+.sec-label::before,.sec-label::after{content:'';width:20px;height:1px;background:var(--vl);opacity:.5}
+.sec-title{font-family:var(--fd);font-size:clamp(28px,4vw,46px);font-weight:800;line-height:1.1;letter-spacing:-.015em;margin-bottom:14px}
+.sec-sub{font-size:17px;color:var(--t2);line-height:1.7;max-width:560px}
+.tc{text-align:center}.tc .sec-sub{margin:0 auto}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* HERO */
+.hero{position:relative;min-height:84vh;display:flex;align-items:center;justify-content:center;padding:80px 24px;overflow:hidden;text-align:center}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 65% 65% at 50% 40%,rgba(109,40,217,.26) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 80% 20%,rgba(245,158,11,.07) 0%,transparent 60%)}
+.hero-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(var(--brd2) 1px,transparent 1px),linear-gradient(90deg,var(--brd2) 1px,transparent 1px);background-size:60px 60px}
+.hero-orb{position:absolute;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.2) 0%,transparent 70%);filter:blur(60px);top:50%;left:50%;transform:translate(-50%,-50%);animation:orb 8s ease-in-out infinite;pointer-events:none}
+@keyframes orb{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.1)}}
+.hero-content{position:relative;z-index:1;max-width:820px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(139,92,246,.1);border:1px solid var(--brd2);border-radius:99px;padding:7px 18px;font-size:13px;font-weight:600;color:var(--vl);margin-bottom:26px;animation:fadeUp .7s .1s both ease-out}
+.hero h1{font-family:var(--fd);font-size:clamp(32px,6vw,64px);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:20px;animation:fadeUp .7s .2s both ease-out}
+.hero-sub{font-size:clamp(16px,2vw,19px);color:var(--t2);max-width:600px;margin:0 auto 36px;animation:fadeUp .7s .3s both ease-out}
+.hero-ctas{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;animation:fadeUp .7s .5s both ease-out}
+.btn-buy{background:linear-gradient(135deg,var(--gold),var(--gld));color:#000;padding:16px 36px;border-radius:12px;font-size:16px;font-weight:800;font-family:var(--fb);box-shadow:0 8px 30px rgba(245,158,11,.45);transition:var(--tr);display:inline-flex;align-items:center;gap:9px}
+.btn-buy:hover{transform:translateY(-3px)}
+.btn-sec{background:transparent;color:var(--t2);padding:16px 28px;border-radius:12px;font-size:15px;font-weight:500;border:1px solid var(--brd2);transition:var(--tr);display:inline-flex;align-items:center;gap:8px}
+.btn-sec:hover{color:var(--t1);border-color:var(--vl);background:rgba(139,92,246,.06)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+/* STORE (Courses + Digital Products) */
+.store-section{background:var(--bg)}
+.store-section.alt{background:var(--bg2)}
+.store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin-top:36px}
+.store-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--rl);overflow:hidden;transition:var(--tr);display:flex;flex-direction:column;position:relative}
+.store-card:hover{transform:translateY(-5px);border-color:var(--brd2);box-shadow:var(--sh)}
+.store-thumb{aspect-ratio:16/10;background:linear-gradient(135deg,var(--bg2),var(--bg3));display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.store-thumb img{width:100%;height:100%;object-fit:cover}
+.store-thumb .placeholder-icon{font-size:42px;color:var(--vl);opacity:.4}
+.store-badge-tag{position:absolute;top:10px;left:10px;background:rgba(139,92,246,.92);color:#fff;font-size:11px;font-weight:700;padding:4px 11px;border-radius:99px;letter-spacing:.02em}
+.store-body{padding:18px;display:flex;flex-direction:column;flex:1}
+.store-title{font-family:var(--fd);font-size:16px;font-weight:800;margin-bottom:6px;line-height:1.3}
+.store-desc{font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:16px;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.store-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.store-price{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--gold)}
+.store-buy-btn{background:linear-gradient(135deg,var(--v),var(--vd));color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:700;transition:var(--tr);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.store-buy-btn:hover{transform:translateY(-2px)}
+.store-buy-btn.owned{background:linear-gradient(135deg,var(--grn),#065F46)}
+.store-empty{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--t3)}
+.store-empty i{font-size:44px;margin-bottom:10px;color:var(--brd2);display:block}
+.store-preview-btn{background:var(--surf2);color:var(--t1);border:1px solid var(--brd2);padding:10px 14px;border-radius:9px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;transition:var(--tr)}
+.store-preview-btn:hover{border-color:var(--vl);background:rgba(139,92,246,.1)}
+.store-card-actions{display:flex;gap:8px;align-items:center}
+
+/* PREVIEW MODAL */
+.pv-overlay{position:fixed;inset:0;z-index:850;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:var(--tr)}
+.pv-overlay.open{opacity:1;visibility:visible}
+.pv-card{background:var(--bg2);border:1px solid var(--brd2);border-radius:var(--rl);width:100%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:0 40px 100px rgba(0,0,0,.7);transform:scale(.94);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.pv-overlay.open .pv-card{transform:scale(1)}
+.pv-hdr{padding:18px 22px;border-bottom:1px solid var(--brd);background:var(--bg3);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2}
+.pv-hdr h3{font-family:var(--fd);font-size:16px;font-weight:800}
+.pv-x{width:30px;height:30px;border-radius:50%;background:var(--surf);border:1px solid var(--brd);color:var(--t2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.pv-x:hover{color:var(--t1)}
+.pv-body{padding:22px}
+.pv-video-wrap{border-radius:var(--r);overflow:hidden;background:#000;margin-bottom:18px}
+.pv-video-wrap video{width:100%;max-height:380px;display:block}
+.pv-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:20px}
+.pv-gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--brd);cursor:pointer;transition:var(--tr)}
+.pv-gallery img:hover{border-color:var(--brd2);transform:scale(1.03)}
+.pv-empty-note{font-size:13px;color:var(--t3);text-align:center;padding:20px 0}
+.pv-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:6px;border-top:1px solid var(--brd);margin-top:6px;flex-wrap:wrap}
+.pv-price{font-family:var(--fd);font-size:24px;font-weight:800;color:var(--gold)}
+.pv-get-btn{background:linear-gradient(135deg,var(--gold),var(--gld));color:#000;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:800;font-family:var(--fd);box-shadow:0 6px 22px rgba(245,158,11,.4);display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.pv-get-btn:hover{transform:translateY(-2px)}
+.pv-thumb-x{width:20px;height:20px;border-radius:50%;background:rgba(239,68,68,.85);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:absolute;top:-6px;right:-6px}
+.adm-prev-thumb{position:relative;display:inline-block}
+.deliv-file-item{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:8px 12px;font-size:12px}
+.deliv-file-item i.fa-check-circle{color:var(--grn)}
+.deliv-file-item .dfi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t1)}
+.deliv-file-item .dfi-del{width:18px;height:18px;border-radius:50%;background:rgba(239,68,68,.85);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+
+/* ACCESS MODAL (post-purchase file delivery) */
+.ac-overlay{position:fixed;inset:0;z-index:850;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:var(--tr)}
+.ac-overlay.open{opacity:1;visibility:visible}
+.ac-card{background:var(--bg2);border:1px solid var(--brd2);border-radius:var(--rl);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;box-shadow:0 40px 100px rgba(0,0,0,.7);transform:scale(.94);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.ac-overlay.open .ac-card{transform:scale(1)}
+.ac-hdr{padding:18px 22px;border-bottom:1px solid var(--brd);background:var(--bg3);display:flex;align-items:center;justify-content:space-between}
+.ac-hdr h3{font-family:var(--fd);font-size:16px;font-weight:800}
+.ac-x{width:30px;height:30px;border-radius:50%;background:var(--surf);border:1px solid var(--brd);color:var(--t2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ac-x:hover{color:var(--t1)}
+.ac-body{padding:20px 22px}
+.ac-file-row{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--brd);border-radius:10px;padding:14px;margin-bottom:10px}
+.ac-file-icon{width:38px;height:38px;border-radius:9px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);display:flex;align-items:center;justify-content:center;color:var(--grn);font-size:16px;flex-shrink:0}
+.ac-file-name{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-dl-link{background:linear-gradient(135deg,var(--grn),#065F46);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+
+/* TESTIMONIALS */
+.test-section{background:var(--bg)}
+.test-grid{margin-top:48px;columns:3;column-gap:20px}
+.test-card{break-inside:avoid;background:var(--surf);border:1px solid var(--brd);border-radius:var(--rl);padding:26px;margin-bottom:20px;transition:var(--tr)}
+.test-card:hover{border-color:var(--brd2)}
+.t-stars{display:flex;gap:2px;margin-bottom:12px}
+.t-stars i{color:var(--gold);font-size:13px}
+.t-quote{font-size:14px;color:var(--t1);line-height:1.75;margin-bottom:18px}
+.t-author{display:flex;align-items:center;gap:11px}
+.t-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--v),var(--vd));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0}
+.t-name{font-weight:700;font-size:14px}
+.t-role{font-size:12px;color:var(--t3)}
+.t-ver{font-size:11px;color:var(--grn);display:flex;align-items:center;gap:3px;margin-top:2px}
+@media(max-width:900px){.test-grid{columns:2}}
+@media(max-width:600px){.test-grid{columns:1}}
+
+/* FAQ */
+.faq-section{background:var(--bg2)}
+.faq-list{max-width:720px;margin:48px auto 0}
+.faq-item{border:1px solid var(--brd);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.faq-item.open{border-color:var(--brd2)}
+.faq-q{width:100%;padding:20px 22px;display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;background:var(--surf);cursor:pointer;text-align:left;gap:14px}
+.faq-q:hover{background:var(--surf2)}
+.faq-q i{flex-shrink:0;color:var(--vl);font-size:16px;transition:var(--tr)}
+.faq-item.open .faq-q i{transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.faq-item.open .faq-a{max-height:400px}
+.faq-a-inner{background:var(--bg);padding:0 22px 20px;font-size:14px;color:var(--t2);line-height:1.75}
+
+/* FOOTER */
+footer{background:var(--bg3);border-top:1px solid var(--brd);padding:50px 24px 30px}
+.footer-top{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:36px}
+.footer-logo{font-family:var(--fd);font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--vl),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px}
+.footer-desc{font-size:13px;color:var(--t3);line-height:1.7}
+.footer-col h4{font-size:12px;font-weight:700;color:var(--t1);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.footer-col a{display:block;font-size:13px;color:var(--t3);margin-bottom:9px}
+.footer-col a:hover{color:var(--t2)}
+.footer-bot{max-width:1100px;margin:0 auto;padding-top:24px;border-top:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--t3)}
+.footer-disc{max-width:1100px;margin:16px auto 0;font-size:11px;color:var(--t3);opacity:.6;line-height:1.7}
+@media(max-width:768px){.footer-top{grid-template-columns:1fr 1fr}.footer-brand{grid-column:1/-1}}
+
+/* FLOATING BTNS */
+.float-buy{position:fixed;bottom:28px;right:28px;z-index:300;background:linear-gradient(135deg,var(--gold),var(--gld));color:#000;padding:13px 22px;border-radius:50px;font-size:13px;font-weight:800;box-shadow:0 8px 28px rgba(245,158,11,.5);display:flex;align-items:center;gap:8px;cursor:pointer;transition:var(--tr);opacity:0;transform:translateY(16px);pointer-events:none}
+.float-buy.show{opacity:1;transform:none;pointer-events:auto}
+.float-buy:hover{transform:translateY(-2px)}
+.sticky-mob{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--bg2);border-top:1px solid var(--brd);padding:10px 14px}
+@media(max-width:768px){.sticky-mob{display:block}.float-buy{display:none}}
+.sticky-mob button{width:100%;background:linear-gradient(135deg,var(--gold),var(--gld));color:#000;padding:14px;border-radius:10px;font-size:14px;font-weight:800}
+
+/* ADMIN PANEL */
+.admin-panel{position:fixed;top:0;right:-440px;width:440px;height:100vh;z-index:900;background:var(--bg2);border-left:1px solid var(--brd2);box-shadow:-20px 0 60px rgba(0,0,0,.6);transition:.4s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
+.admin-panel.open{right:0}
+.admin-hdr{padding:22px 24px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;background:var(--bg3);position:sticky;top:0;z-index:1}
+.admin-hdr h3{font-family:var(--fd);font-size:18px;font-weight:800}
+.admin-close{width:32px;height:32px;border-radius:50%;background:var(--surf);border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;color:var(--t2);font-size:16px;cursor:pointer}
+.admin-close:hover{color:var(--t1)}
+.admin-body{padding:22px;flex:1}
+.admin-sec-title{font-size:11px;font-weight:700;color:var(--vl);text-transform:uppercase;letter-spacing:.1em;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--brd)}
+.admin-block{margin-bottom:30px;padding-bottom:24px;border-bottom:1px dashed var(--brd)}
+.admin-block:last-child{border-bottom:none}
+.adm-input{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:9px;padding:11px 14px;color:var(--t1);font-size:13px;font-family:var(--fb);outline:none;margin-bottom:10px;transition:var(--tr)}
+.adm-input:focus{border-color:var(--v)}
+.drop-zone{border:2px dashed var(--brd2);border-radius:var(--r);padding:26px 18px;text-align:center;background:rgba(139,92,246,.02)}
+.drop-zone.drag{border-color:var(--v);background:rgba(139,92,246,.08)}
+.drop-zone i{font-size:30px;color:var(--vl);margin-bottom:8px;display:block}
+.drop-zone p{font-size:13px;color:var(--t2);margin-bottom:10px}
+.drop-zone small{font-size:11px;color:var(--t3)}
+.browse-btn{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--v),var(--vd));color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px}
+.browse-btn:hover{transform:translateY(-1px)}
+.up-progress{height:4px;background:var(--surf2);border-radius:99px;margin-top:12px;overflow:hidden;display:none}
+.up-bar{height:100%;background:linear-gradient(90deg,var(--v),var(--vl));width:0%;transition:width .3s ease;border-radius:99px}
+.up-status{font-size:12px;color:var(--t2);margin-top:8px;text-align:center;display:none}
+.admin-gallery{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.ag-item{border-radius:8px;overflow:hidden;position:relative;aspect-ratio:16/9;background:var(--surf);border:1px solid var(--brd)}
+.ag-item img,.ag-item video{width:100%;height:100%;object-fit:cover}
+.ag-item .ag-fallback{display:flex;align-items:center;justify-content:center;height:100%;color:var(--t3);font-size:11px;padding:6px;text-align:center}
+.ag-del{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.85);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.adm-thumb-prev{margin-bottom:10px}
+.adm-save-btn{width:100%;background:linear-gradient(135deg,var(--v),var(--vd));color:#fff;padding:12px;border-radius:9px;font-size:14px;font-weight:700;box-shadow:0 6px 20px rgba(139,92,246,.35);transition:var(--tr)}
+.adm-save-btn:hover{transform:translateY(-2px)}
+.admin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;opacity:0;visibility:hidden;transition:var(--tr)}
+.admin-overlay.open{opacity:1;visibility:visible}
+
+/* CHECKOUT MODAL */
+.co-overlay{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:var(--tr)}
+.co-overlay.open{opacity:1;visibility:visible}
+.co-card{background:var(--bg2);border:1px solid var(--brd2);border-radius:var(--rl);width:100%;max-width:460px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.7);transform:scale(.94);transition:transform .35s cubic-bezier(.34,1.56,.64,1);max-height:92vh;overflow-y:auto}
+.co-overlay.open .co-card{transform:scale(1)}
+.co-hdr{padding:20px 24px;border-bottom:1px solid var(--brd);background:var(--bg3);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2}
+.co-hdr h3{font-family:var(--fd);font-size:17px;font-weight:800}
+.co-x{width:30px;height:30px;border-radius:50%;background:var(--surf);border:1px solid var(--brd);color:var(--t2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.co-x:hover{color:var(--t1)}
+.co-product{display:flex;align-items:center;gap:14px;padding:20px 24px;border-bottom:1px solid var(--brd)}
+.co-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--v),var(--vd));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.co-pname{font-size:13px;font-weight:700;margin-bottom:2px}
+.co-pbrand{font-size:11px;color:var(--t3)}
+.co-pprice{margin-left:auto;font-family:var(--fd);font-size:22px;font-weight:800;color:var(--gold);white-space:nowrap}
+.co-tabs{display:flex;padding:16px 24px 0}
+.co-tab-btn{flex:1;padding:10px 6px;border-bottom:2px solid transparent;font-size:13px;font-weight:600;color:var(--t2);text-align:center;cursor:pointer}
+.co-tab-btn.act{border-color:var(--v);color:var(--t1)}
+.co-body{padding:20px 24px}
+.co-pane{display:none}.co-pane.act{display:block}
+.co-info{font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6}
+#paypal-btn-container{min-height:44px}
+.co-rzp-methods{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 16px}
+.co-rzp-badge{background:var(--surf2);border:1px solid var(--brd);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--t2)}
+.co-pay-btn{width:100%;background:linear-gradient(135deg,var(--v),var(--vd));color:#fff;padding:14px;border-radius:10px;font-size:15px;font-weight:700;font-family:var(--fb);box-shadow:0 6px 22px rgba(139,92,246,.4);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.co-pay-btn:hover{transform:translateY(-2px)}
+.co-input{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:9px;padding:11px 14px;color:var(--t1);font-size:14px;font-family:var(--fb);outline:none;margin-bottom:12px}
+.co-input:focus{border-color:var(--v)}
+.co-row{display:flex;gap:10px}.co-row .co-input{margin-bottom:0}
+.co-trust{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px 24px;border-top:1px solid var(--brd);flex-wrap:wrap}
+.co-trust span{font-size:12px;color:var(--t3);display:flex;align-items:center;gap:5px}
+.co-trust i{color:var(--grn)}
+.co-success{text-align:center;padding:20px 10px;display:none}
+.co-success-icon{font-size:56px;margin-bottom:14px}
+.co-success h3{font-family:var(--fd);font-size:22px;font-weight:800;margin-bottom:10px}
+.co-success p{color:var(--t2);font-size:14px;margin-bottom:22px}
+.co-dl-btn{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,var(--grn),#065F46);color:#fff;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:700;box-shadow:0 6px 22px rgba(16,185,129,.4)}
+.co-dl-btn:hover{transform:translateY(-2px)}
+
+/* LIGHTBOX */
+.lb-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.92);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:var(--tr);padding:20px}
+.lb-overlay.open{opacity:1;visibility:visible}
+.lb-card{background:var(--bg2);border-radius:var(--rl);overflow:hidden;max-width:860px;width:100%;box-shadow:0 40px 100px rgba(0,0,0,.8);transform:scale(.94);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.lb-overlay.open .lb-card{transform:scale(1)}
+.lb-top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--brd);background:var(--bg3)}
+.lb-title{font-size:14px;font-weight:700}
+.lb-x{width:30px;height:30px;border-radius:50%;background:var(--surf);border:1px solid var(--brd);color:var(--t2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.lb-x:hover{color:var(--t1)}
+.lb-body{background:#000;display:flex;align-items:center;justify-content:center;min-height:200px}
+.lb-body video{width:100%;max-height:70vh;display:block}
+.lb-body img{max-width:100%;max-height:70vh;object-fit:contain}
+
+/* TOAST */
+.toast{position:fixed;top:80px;right:20px;left:20px;z-index:2000;background:var(--surf);border:1px solid var(--brd2);border-radius:10px;padding:13px 20px;font-size:14px;font-weight:600;box-shadow:var(--sh);transform:translateY(-120%);transition:transform .3s ease;display:flex;align-items:center;gap:10px;max-width:380px;margin:0 auto 0 auto}
+@media(min-width:480px){.toast{left:auto;margin:0}}
+.toast.show{transform:translateY(0)}
+.toast.ok{border-color:rgba(16,185,129,.4);color:var(--grn)}
+.toast.err{border-color:rgba(239,68,68,.4);color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><span class="gt">NexaVault</span></div>
+    <p class="auth-tagline">Courses &amp; Digital Products Marketplace</p>
+    <div class="auth-err" id="authErr"></div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login',this)">Sign In</div>
+      <div class="auth-tab" onclick="switchAuthTab('register',this)">Register</div>
+    </div>
+    <div class="auth-pane active" id="pane-login">
+      <div class="auth-field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@email.com"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="auth-btn" onclick="emailLogin()"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In</button>
+      <div class="auth-or">OR</div>
+      <button class="auth-google" onclick="googleLogin()">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+    <div class="auth-pane" id="pane-register">
+      <div class="auth-field"><label>Full Name</label><input type="text" id="regName" placeholder="Your name"></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="regEmail" placeholder="you@email.com"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="regPass" placeholder="Min 6 characters"></div>
+      <button class="auth-btn" onclick="registerUser()"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+      <div class="auth-or">OR</div>
+      <button class="auth-google" onclick="googleLogin()">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+
+<nav>
+  <div class="nav-logo" id="logoTrigger">NexaVault</div>
+  <div class="nav-links">
+    <a href="#courses-store">Courses</a>
+    <a href="#products-store">Products</a>
+    <a href="#testimonials">Reviews</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div class="nav-right">
+    <button class="btn-admin" id="adminBtn" onclick="openAdmin()"><i class="fa-solid fa-sliders"></i> Admin</button>
+    <div class="user-pill">
+      <div class="user-av" id="userAv">U</div>
+      <span class="user-name" id="userName">User</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-content">
+    <div class="hero-badge"><i class="fa-solid fa-bolt"></i> Trusted by Thousands of Customers Worldwide</div>
+    <h1>Learn Faster. Build Smarter.<br><span class="gt">Sell More.</span></h1>
+    <p class="hero-sub">Hand-picked courses and ready-to-use digital products — built to get you real results. Instant access, lifetime updates, secure checkout.</p>
+    <div class="hero-ctas">
+      <a href="#courses-store" class="btn-buy"><i class="fa-solid fa-graduation-cap"></i> Browse Courses</a>
+      <a href="#products-store" class="btn-sec"><i class="fa-solid fa-box-open"></i> Browse Products</a>
+    </div>
+  </div>
+</section>
+
+<!-- COURSES STORE -->
+<section class="store-section" id="courses-store">
+  <div class="container">
+    <div class="tc">
+      <div class="sec-label">📚 Courses</div>
+      <h2 class="sec-title">Browse All <span class="gt">Courses</span></h2>
+      <p class="sec-sub tc">In-depth, step-by-step courses to help you master digital product creation and online selling.</p>
+    </div>
+    <div class="store-grid" id="courseGrid">
+      <div class="store-empty"><i class="fa-solid fa-graduation-cap"></i><p>No courses listed yet</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- DIGITAL PRODUCTS STORE -->
+<section class="store-section alt" id="products-store">
+  <div class="container">
+    <div class="tc">
+      <div class="sec-label">📦 Digital Products</div>
+      <h2 class="sec-title">Browse Digital <span class="gt">Products</span></h2>
+      <p class="sec-sub tc">Templates, toolkits, ebooks and resources — instant download right after purchase.</p>
+    </div>
+    <div class="store-grid" id="productGrid">
+      <div class="store-empty"><i class="fa-solid fa-box-open"></i><p>No products listed yet</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="test-section" id="testimonials">
+  <div class="container">
+    <div class="tc">
+      <div class="sec-label">Real Results</div>
+      <h2 class="sec-title">What Customers<br><span class="gt">Are Saying</span></h2>
+    </div>
+    <div class="test-grid">
+      <div class="test-card reveal">
+        <div class="t-stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+        <p class="t-quote">"Within one week I already made back 10x what I paid. This roadmap is the real deal — nothing else comes close."</p>
+        <div class="t-author"><div class="t-av">JR</div><div><div class="t-name">James R.</div><div class="t-role">Entrepreneur · Austin, TX</div><div class="t-ver"><i class="fa-solid fa-circle-check"></i> Verified</div></div></div>
+      </div>
+      <div class="test-card reveal">
+        <div class="t-stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+        <p class="t-quote">"I've spent thousands on courses. This single product delivered more actionable value than everything else combined."</p>
+        <div class="t-author"><div class="t-av" style="background:linear-gradient(135deg,#EC4899,#BE185D)">SK</div><div><div class="t-name">Sarah K.</div><div class="t-role">Marketing Director · New York</div><div class="t-ver"><i class="fa-solid fa-circle-check"></i> Verified</div></div></div>
+      </div>
+      <div class="test-card reveal">
+        <div class="t-stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+        <p class="t-quote">"The step-by-step breakdown is incredible. My results have gone through the roof in just 3 weeks. Five stars."</p>
+        <div class="t-author"><div class="t-av" style="background:linear-gradient(135deg,#F59E0B,#D97706)">MT</div><div><div class="t-name">Michael T.</div><div class="t-role">Freelancer · Chicago, IL</div><div class="t-ver"><i class="fa-solid fa-circle-check"></i> Verified</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section" id="faq">
+  <div class="container">
+    <div class="tc">
+      <div class="sec-label">FAQ</div>
+      <h2 class="sec-title">Common <span class="gt">Questions</span></h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">What do I get when I purchase a course or product? <i class="fa-solid fa-plus"></i></button><div class="faq-a"><div class="faq-a-inner">You get instant access delivered digitally within 60 seconds of payment. Each listing includes everything described — videos, files, templates, or downloads — with lifetime access.</div></div></div>
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Do I need prior experience? <i class="fa-solid fa-plus"></i></button><div class="faq-a"><div class="faq-a-inner">No experience needed. Our courses and products are designed for complete beginners and experienced creators alike.</div></div></div>
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Can I get a refund? <i class="fa-solid fa-plus"></i></button><div class="faq-a"><div class="faq-a-inner">Yes — 30-day money-back guarantee on all purchases. Email us within 30 days for a full refund, no questions asked.</div></div></div>
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Is my payment safe? <i class="fa-solid fa-plus"></i></button><div class="faq-a"><div class="faq-a-inner">Completely. We use PayPal (buyer protection) and Razorpay (PCI-DSS compliant, UPI/Cards/Net Banking). 256-bit SSL encryption throughout. We never store your card details.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo">NexaVault</div>
+      <p class="footer-desc">A growing marketplace of courses and digital products built to help you learn, build, and sell online.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Browse</h4>
+      <a href="#courses-store">Courses</a>
+      <a href="#products-store">Digital Products</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Refund Policy</a>
+    </div>
+  </div>
+  <div class="footer-bot">
+    <span>© 2025 NexaVault. All rights reserved.</span>
+    <span>Contact: mdfaizan0191@gmail.com</span>
+  </div>
+  <p class="footer-disc">EARNINGS DISCLAIMER: Results mentioned are not typical. Individual results vary based on background, experience, and effort.</p>
+</footer>
+
+<button class="float-buy" id="floatBuy" onclick="document.getElementById('courses-store').scrollIntoView({behavior:'smooth'})"><i class="fa-solid fa-store"></i> Browse Store</button>
+<div class="sticky-mob"><button onclick="document.getElementById('courses-store').scrollIntoView({behavior:'smooth'})">🛒 Browse Courses &amp; Products</button></div>
+
+</div><!-- /mainApp -->
+
+<!-- ADMIN PANEL -->
+<div class="admin-overlay" id="adminOverlay" onclick="closeAdmin()"></div>
+<div class="admin-panel" id="adminPanel">
+  <div class="admin-hdr">
+    <h3>⚙️ Admin Panel</h3>
+    <div class="admin-close" onclick="closeAdmin()">×</div>
+  </div>
+  <div class="admin-body">
+
+    <!-- ADD COURSE -->
+    <div class="admin-block">
+      <div class="admin-sec-title">📚 Add New Course</div>
+      <input type="text" class="adm-input" id="crsTitle" placeholder="Course title">
+      <textarea class="adm-input" id="crsDesc" rows="3" placeholder="Short description" style="resize:vertical"></textarea>
+      <input type="number" class="adm-input" id="crsPrice" placeholder="Price in USD (e.g. 49.99)" step="0.01">
+      <label class="browse-btn" style="width:100%;justify-content:center">
+        <i class="fa-solid fa-image"></i>&nbsp; Upload Thumbnail
+        <input type="file" accept="image/*" onchange="uploadThumb(this,'crs')" style="display:none">
+      </label>
+      <div class="adm-thumb-prev" id="crsThumbPreview"></div>
+      <label class="browse-btn" style="width:100%;justify-content:center;margin-top:10px">
+        <i class="fa-solid fa-film"></i>&nbsp; Upload Preview Video
+        <input type="file" accept="video/*" onchange="uploadPreviewVideo(this,'crs')" style="display:none">
+      </label>
+      <div class="adm-thumb-prev" id="crsPrevVideoPreview"></div>
+      <label class="browse-btn" style="width:100%;justify-content:center;margin-top:6px">
+        <i class="fa-solid fa-images"></i>&nbsp; Upload Preview Images
+        <input type="file" accept="image/*" multiple onchange="uploadPreviewImages(this,'crs')" style="display:none">
+      </label>
+      <div class="adm-thumb-prev" id="crsPrevImagesPreview" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <label class="browse-btn" style="width:100%;justify-content:center;margin-top:10px;background:linear-gradient(135deg,var(--grn),#065F46)">
+        <i class="fa-solid fa-cloud-arrow-up"></i>&nbsp; Upload Course File(s) — Video / ZIP / PDF
+        <input type="file" multiple onchange="uploadDeliverable(this,'crs')" style="display:none">
+      </label>
+      <p style="font-size:11px;color:var(--t3);margin:6px 0">Uploaded files become the buyer's access link automatically — no external hosting needed.</p>
+      <div id="crsFilesPreview" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <button class="adm-save-btn" onclick="addCourse()"><i class="fa-solid fa-plus"></i> Add Course</button>
+      <p style="font-size:11px;color:var(--t3);margin-top:8px">Existing courses:</p>
+      <div class="admin-gallery" id="adminCourseGallery"></div>
+    </div>
+
+    <!-- ADD PRODUCT -->
+    <div class="admin-block">
+      <div class="admin-sec-title">📦 Add New Digital Product</div>
+      <input type="text" class="adm-input" id="prdTitle" placeholder="Product title">
+      <textarea class="adm-input" id="prdDesc" rows="3" placeholder="Short description" style="resize:vertical"></textarea>
+      <input type="number" class="adm-input" id="prdPrice" placeholder="Price in USD (e.g. 19.99)" step="0.01">
+      <label class="browse-btn" style="width:100%;justify-content:center">
+        <i class="fa-solid fa-image"></i>&nbsp; Upload Thumbnail
+        <input type="file" accept="image/*" onchange="uploadThumb(this,'prd')" style="display:none">
+      </label>
+      <div class="adm-thumb-prev" id="prdThumbPreview"></div>
+      <label class="browse-btn" style="width:100%;justify-content:center;margin-top:10px">
+        <i class="fa-solid fa-film"></i>&nbsp; Upload Preview Video
+        <input type="file" accept="video/*" onchange="uploadPreviewVideo(this,'prd')" style="display:none">
+      </label>
+      <div class="adm-thumb-prev" id="prdPrevVideoPreview"></div>
+      <label class="browse-btn" style="width:100%;justify-content:center;margin-top:6px">
+        <i class="fa-solid fa-images"></i>&nbsp; Upload Preview Images
+        <input type="file" accept="image/*" multiple onchange="uploadPreviewImages(this,'prd')" style="display:none">
+      </label>
+      <div class="adm-thumb-prev" id="prdPrevImagesPreview" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <label class="browse-btn" style="width:100%;justify-content:center;margin-top:10px;background:linear-gradient(135deg,var(--grn),#065F46)">
+        <i class="fa-solid fa-cloud-arrow-up"></i>&nbsp; Upload Product File(s) — ZIP / PDF / Any File
+        <input type="file" multiple onchange="uploadDeliverable(this,'prd')" style="display:none">
+      </label>
+      <p style="font-size:11px;color:var(--t3);margin:6px 0">Uploaded files become the buyer's download link automatically — no external hosting needed.</p>
+      <div id="prdFilesPreview" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <button class="adm-save-btn" onclick="addProduct()"><i class="fa-solid fa-plus"></i> Add Product</button>
+      <p style="font-size:11px;color:var(--t3);margin-top:8px">Existing products:</p>
+      <div class="admin-gallery" id="adminProductGallery"></div>
+    </div>
+
+    <!-- VIDEO UPLOAD (general media library) -->
+    <div class="admin-block">
+      <div class="admin-sec-title">🎬 Media Library — Videos</div>
+      <p style="font-size:11px;color:var(--t3);margin-bottom:10px">Upload videos here to get a Cloudinary link you can paste into any course's Access Link field.</p>
+      <div class="drop-zone" id="vidDrop"
+           ondragover="event.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="handleVideoDrop(event)">
+        <i class="fa-solid fa-film"></i>
+        <p>Drag &amp; Drop videos here</p>
+        <small>MP4 · MOV · AVI · WEBM</small><br>
+        <label class="browse-btn">
+          <i class="fa-solid fa-folder-open"></i> Browse Videos
+          <input type="file" accept="video/*" multiple onchange="uploadVideos(this.files)" style="display:none">
+        </label>
+      </div>
+      <div class="up-progress" id="vidProgress"><div class="up-bar" id="vidBar"></div></div>
+      <div class="up-status" id="vidStatus"></div>
+      <div class="admin-gallery" id="adminVidGallery"></div>
+    </div>
+
+    <!-- PHOTO UPLOAD (general media library) -->
+    <div class="admin-block">
+      <div class="admin-sec-title">🖼️ Media Library — Photos</div>
+      <p style="font-size:11px;color:var(--t3);margin-bottom:10px">Upload photos here to get a Cloudinary link for thumbnails or resources.</p>
+      <div class="drop-zone" id="photoDrop"
+           ondragover="event.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="handlePhotoDrop(event)">
+        <i class="fa-solid fa-images"></i>
+        <p>Drag &amp; Drop photos here</p>
+        <small>JPG · PNG · WEBP · GIF</small><br>
+        <label class="browse-btn">
+          <i class="fa-solid fa-folder-open"></i> Browse Photos
+          <input type="file" accept="image/*" multiple onchange="uploadPhotos(this.files)" style="display:none">
+        </label>
+      </div>
+      <div class="up-progress" id="photoProgress"><div class="up-bar" id="photoBar"></div></div>
+      <div class="up-status" id="photoStatus"></div>
+      <div class="admin-gallery" id="adminPhotoGallery"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PREVIEW MODAL (shown before purchase — video + image gallery, hosted on this site) -->
+<div class="pv-overlay" id="pvOverlay" onclick="pvOverlayClick(event)">
+  <div class="pv-card">
+    <div class="pv-hdr">
+      <h3 id="pvTitle">Preview</h3>
+      <div class="pv-x" onclick="closePreview()">×</div>
+    </div>
+    <div class="pv-body" id="pvBody">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ACCESS MODAL (shown after purchase — lists all delivered files) -->
+<div class="ac-overlay" id="acOverlay" onclick="acOverlayClick(event)">
+  <div class="ac-card">
+    <div class="ac-hdr">
+      <h3 id="acTitle">Your Files</h3>
+      <div class="ac-x" onclick="closeAccess()">×</div>
+    </div>
+    <div class="ac-body" id="acBody"></div>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="co-overlay" id="coOverlay" onclick="coOverlayClick(event)">
+  <div class="co-card">
+    <div class="co-hdr">
+      <h3>Complete Your Purchase</h3>
+      <div class="co-x" onclick="closeCheckout()">×</div>
+    </div>
+    <div class="co-product">
+      <div class="co-icon" id="coIcon">🎓</div>
+      <div><div class="co-pname" id="coPname">Item Name</div><div class="co-pbrand" id="coPbrand">NexaVault</div></div>
+      <div class="co-pprice" id="coPprice">$0.00</div>
+    </div>
+    <div class="co-tabs" id="coTabs">
+      <div class="co-tab-btn act" onclick="switchCoTab('paypal',this)"><i class="fa-brands fa-paypal"></i> PayPal</div>
+      <div class="co-tab-btn" onclick="switchCoTab('razorpay',this)"><i class="fa-solid fa-indian-rupee-sign"></i> Razorpay</div>
+      <div class="co-tab-btn" onclick="switchCoTab('card',this)"><i class="fa-solid fa-credit-card"></i> Card</div>
+    </div>
+    <div class="co-body">
+      <div class="co-success" id="coSuccess">
+        <div class="co-success-icon">🎉</div>
+        <h3>Payment Successful!</h3>
+        <p>Your purchase is unlocked. Click below to access your content.</p>
+        <a href="#" id="coDownloadBtn" class="co-dl-btn"><i class="fa-solid fa-file-arrow-down"></i> View My Files</a>
+      </div>
+      <div id="coTabsBody">
+        <div class="co-pane act" id="pane-paypal">
+          <p class="co-info">Pay securely via PayPal. Click the button below to complete your purchase.</p>
+          <div id="paypal-btn-container"></div>
+        </div>
+        <div class="co-pane" id="pane-razorpay">
+          <p class="co-info">Pay with Razorpay — supports UPI, Cards, Net Banking, Paytm, PhonePe and more.</p>
+          <div class="co-rzp-methods">
+            <span class="co-rzp-badge">UPI</span><span class="co-rzp-badge">Cards</span>
+            <span class="co-rzp-badge">Net Banking</span><span class="co-rzp-badge">Paytm</span>
+            <span class="co-rzp-badge">PhonePe</span><span class="co-rzp-badge">Wallets</span>
+          </div>
+          <button class="co-pay-btn" onclick="payRazorpay()"><i class="fa-solid fa-bolt"></i> Pay <span id="rzpAmountLabel">₹0</span> via Razorpay</button>
+        </div>
+        <div class="co-pane" id="pane-card">
+          <p class="co-info">Card payments are processed securely through PayPal — you do <strong>not</strong> need a PayPal account. Click the PayPal tab, then choose <strong>"Debit or Credit Card"</strong> on the PayPal screen.</p>
+          <button class="co-pay-btn" onclick="switchCoTab('paypal', document.querySelector('.co-tab-btn'))"><i class="fa-brands fa-paypal"></i> Continue to Card Checkout</button>
+        </div>
+      </div>
+    </div>
+    <div class="co-trust" id="coTrustBar">
+      <span><i class="fa-solid fa-shield-halved"></i> SSL Secured</span>
+      <span><i class="fa-solid fa-rotate-left"></i> 30-Day Guarantee</span>
+      <span><i class="fa-solid fa-bolt"></i> Instant Access</span>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lb-overlay" id="lbOverlay" onclick="closeLb(event)">
+  <div class="lb-card">
+    <div class="lb-top"><span class="lb-title" id="lbTitle">Media</span><div class="lb-x" onclick="closeLb()">×</div></div>
+    <div class="lb-body" id="lbBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════
+   CONFIG
+══════════════════════════════════════ */
+var ADMIN_EMAIL  = 'mdfaizan0191@gmail.com';
+var CLD_CLOUD    = 'disjuuotu';
+var CLD_PRESET   = 'Nexa Vault';
+var RZP_KEY      = 'rzp_live_T2ZVWkz7hspjnm';
+var USD_TO_INR   = 83;
+var EMAILJS_SERVICE_ID  = 'service_ji2b7is';
+var EMAILJS_TEMPLATE_ID = 'template_bdrv2sx';
+var EMAILJS_PUBLIC_KEY  = 'xST2vGTTZZORN0ME5';
+
+/* ══════════════════════════════════════
+   FIREBASE INIT
+══════════════════════════════════════ */
+firebase.initializeApp({
+  apiKey:"AIzaSyD3-GQxhNGz7q5UwnE4CDO9jKyMd8XK2-k",
+  authDomain:"nexavault-37e8d.firebaseapp.com",
+  projectId:"nexavault-37e8d",
+  storageBucket:"nexavault-37e8d.firebasestorage.app",
+  messagingSenderId:"933539108579",
+  appId:"1:933539108579:web:13386238e396d0c21a97d6",
+  measurementId:"G-GW24V4GSQ8"
+});
+var auth = null;
+var currentUser = null;
+var currentCheckoutItem = null;
+var thumbUrls = { crs:'', prd:'' };
+var previewData = { crs:{video:'', images:[]}, prd:{video:'', images:[]} };
+var tempFiles = { crs:[], prd:[] };
+var ppLoaded = false;
+
+/* ══════════════════════════════════════
+   SAFE FIREBASE BOOT (handles slow/blocked CDN)
+══════════════════════════════════════ */
+var fbRetries = 0;
+function bootFirebase(){
+  if(typeof firebase === 'undefined' || !firebase.auth){
+    fbRetries++;
+    if(fbRetries > 40){ // ~10s of retrying
+      showAuthErr('Could not load the login system. This usually means Firebase scripts are blocked (ad-blocker, offline, or a sandboxed preview). Please open this file directly in Chrome/Safari instead of an embedded preview, and check your internet connection.');
+      return;
+    }
+    setTimeout(bootFirebase, 250);
+    return;
+  }
+  auth = firebase.auth();
+  auth.onAuthStateChanged(function(user){
+    if(user){
+      currentUser = user;
+      showMainApp(user);
+    } else {
+      currentUser = null;
+      showAuthScreen();
+    }
+  });
+}
+bootFirebase();
+
+function showAuthScreen(){
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+function showMainApp(user){
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  var av = document.getElementById('userAv');
+  var nm = document.getElementById('userName');
+  nm.textContent = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+  if(user.photoURL){ av.innerHTML = '<img src="'+user.photoURL+'" alt="">'; }
+  else { av.textContent = ((user.displayName||user.email||'U')[0]).toUpperCase(); }
+  if(user.email === ADMIN_EMAIL){
+    document.getElementById('adminBtn').classList.add('show');
+    document.getElementById('logoTrigger').onclick = adminTrigger;
+  }
+  renderStore();
+  renderAdminMedia();
+  initReveal();
+  initScroll();
+  if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY'){
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+  }
+  setTimeout(initPayPal, 800);
+}
+
+/* ══════════════════════════════════════
+   AUTH ACTIONS
+══════════════════════════════════════ */
+function switchAuthTab(tab, el){
+  document.querySelectorAll('.auth-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.auth-pane').forEach(function(p){ p.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  document.getElementById('pane-'+tab).classList.add('active');
+  clearAuthErr();
+}
+function showAuthErr(msg){ var e=document.getElementById('authErr'); e.textContent=msg; e.style.display='block'; }
+function clearAuthErr(){ document.getElementById('authErr').style.display='none'; }
+
+function fbReady(){
+  if(typeof firebase === 'undefined' || !auth){
+    showAuthErr('Login system is still loading — please wait a few seconds and try again. If this persists, open the file directly in a browser instead of a preview window.');
+    return false;
+  }
+  return true;
+}
+function googleLogin(){
+  if(!fbReady()) return;
+  var p = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(p).catch(function(e){ showAuthErr(e.message); });
+}
+function emailLogin(){
+  if(!fbReady()) return;
+  var em = document.getElementById('loginEmail').value.trim();
+  var pw = document.getElementById('loginPass').value;
+  if(!em || !pw){ showAuthErr('Please fill in all fields.'); return; }
+  auth.signInWithEmailAndPassword(em, pw).catch(function(e){ showAuthErr(e.message); });
+}
+function registerUser(){
+  if(!fbReady()) return;
+  var nm = document.getElementById('regName').value.trim();
+  var em = document.getElementById('regEmail').value.trim();
+  var pw = document.getElementById('regPass').value;
+  if(!nm || !em || !pw){ showAuthErr('Please fill in all fields.'); return; }
+  if(pw.length < 6){ showAuthErr('Password must be at least 6 characters.'); return; }
+  auth.createUserWithEmailAndPassword(em, pw).then(function(r){
+    return r.user.updateProfile({displayName:nm});
+  }).catch(function(e){ showAuthErr(e.message); });
+}
+function logout(){
+  auth.signOut().then(function(){
+    currentUser = null;
+    showAuthScreen();
+  });
+}
+
+/* ══════════════════════════════════════
+   ADMIN PANEL TRIGGER (click logo 3x)
+══════════════════════════════════════ */
+var adminClickCount = 0, adminTimer;
+function adminTrigger(){
+  adminClickCount++;
+  clearTimeout(adminTimer);
+  adminTimer = setTimeout(function(){ adminClickCount = 0; }, 700);
+  if(adminClickCount >= 1){ openAdmin(); adminClickCount = 0; }
+}
+function openAdmin(){
+  document.getElementById('adminPanel').classList.add('open');
+  document.getElementById('adminOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeAdmin(){
+  document.getElementById('adminPanel').classList.remove('open');
+  document.getElementById('adminOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ══════════════════════════════════════
+   STORAGE HELPERS (localStorage)
+══════════════════════════════════════ */
+function lsGet(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }catch(e){ return fallback; } }
+function lsSet(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+function getCourses(){ return lsGet('nv_courses', []); }
+function getProducts(){ return lsGet('nv_products', []); }
+function saveCourses(a){ lsSet('nv_courses', a); }
+function saveProducts(a){ lsSet('nv_products', a); }
+function getVideos(){ return lsGet('nv_videos', []); }
+function getPhotos(){ return lsGet('nv_photos', []); }
+function saveVideos(a){ lsSet('nv_videos', a); }
+function savePhotos(a){ lsSet('nv_photos', a); }
+function isOwned(id){ return localStorage.getItem('nv_owned_'+id) === '1'; }
+
+/* ══════════════════════════════════════
+   CLOUDINARY UPLOAD (generic)
+══════════════════════════════════════ */
+function uploadToCloudinary(file, resourceType, onProgress, onSuccess, onError){
+  var fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLD_PRESET);
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', 'https://api.cloudinary.com/v1_1/'+CLD_CLOUD+'/'+resourceType+'/upload');
+  xhr.upload.onprogress = function(e){
+    if(e.lengthComputable && onProgress) onProgress(Math.round(e.loaded/e.total*100));
+  };
+  xhr.onload = function(){
+    try{
+      var res = JSON.parse(xhr.responseText);
+      if(res.secure_url){ onSuccess(res.secure_url); }
+      else { onError(res.error ? res.error.message : 'Upload failed'); }
+    }catch(e){ onError('Invalid response from Cloudinary'); }
+  };
+  xhr.onerror = function(){ onError('Network error'); };
+  xhr.send(fd);
+}
+
+/* THUMBNAIL UPLOAD (for course/product forms) */
+function uploadThumb(input, prefix){
+  if(!input.files[0]) return;
+  var file = input.files[0];
+  var preview = document.getElementById(prefix+'ThumbPreview');
+  preview.innerHTML = '<small style="color:var(--t3)">Uploading thumbnail...</small>';
+  uploadToCloudinary(file, 'image', null, function(url){
+    thumbUrls[prefix] = url;
+    preview.innerHTML = '<img src="'+url+'" style="width:70px;height:70px;border-radius:8px;object-fit:cover">';
+  }, function(err){
+    preview.innerHTML = '<small style="color:var(--red)">Upload failed: '+err+'</small>';
+  });
+}
+
+/* PREVIEW VIDEO UPLOAD (shown to buyers before purchase, hosted on this site via Cloudinary) */
+function uploadPreviewVideo(input, prefix){
+  if(!input.files[0]) return;
+  var file = input.files[0];
+  var preview = document.getElementById(prefix+'PrevVideoPreview');
+  preview.innerHTML = '<small style="color:var(--t3)">Uploading preview video...</small>';
+  uploadToCloudinary(file, 'video', null, function(url){
+    previewData[prefix].video = url;
+    preview.innerHTML = '<video src="'+url+'" style="width:120px;border-radius:8px" muted></video> <small style="color:var(--grn)">✓ Video attached</small>';
+  }, function(err){
+    preview.innerHTML = '<small style="color:var(--red)">Upload failed: '+err+'</small>';
+  });
+}
+
+/* PREVIEW IMAGES UPLOAD (multiple, shown as gallery before purchase) */
+function uploadPreviewImages(input, prefix){
+  if(!input.files.length) return;
+  var preview = document.getElementById(prefix+'PrevImagesPreview');
+  var files = Array.from(input.files);
+  files.forEach(function(file){
+    var holder = document.createElement('div');
+    holder.innerHTML = '<small style="color:var(--t3)">Uploading...</small>';
+    preview.appendChild(holder);
+    uploadToCloudinary(file, 'image', null, function(url){
+      previewData[prefix].images.push(url);
+      renderPrevImagesPreview(prefix);
+    }, function(err){
+      holder.innerHTML = '<small style="color:var(--red)">Failed</small>';
+    });
+  });
+}
+function renderPrevImagesPreview(prefix){
+  var preview = document.getElementById(prefix+'PrevImagesPreview');
+  preview.innerHTML = previewData[prefix].images.map(function(url, idx){
+    return '<div class="adm-prev-thumb"><img src="'+url+'" style="width:54px;height:54px;border-radius:8px;object-fit:cover">'+
+      '<div class="pv-thumb-x" onclick="removePrevImage(\''+prefix+'\','+idx+')"><i class="fa-solid fa-times"></i></div></div>';
+  }).join('');
+}
+function removePrevImage(prefix, idx){
+  previewData[prefix].images.splice(idx,1);
+  renderPrevImagesPreview(prefix);
+}
+
+/* DELIVERABLE FILE UPLOAD (the actual course/product file — link is auto-generated on this site, no external hosting) */
+function uploadDeliverable(input, prefix){
+  if(!input.files.length) return;
+  var files = Array.from(input.files);
+  var listEl = document.getElementById(prefix+'FilesPreview');
+  files.forEach(function(file){
+    var row = document.createElement('div');
+    row.className = 'deliv-file-item';
+    row.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span class="dfi-name">Uploading '+file.name+'...</span>';
+    listEl.appendChild(row);
+    uploadToCloudinary(file, 'auto', function(pct){
+      row.querySelector('.dfi-name').textContent = 'Uploading '+file.name+'... '+pct+'%';
+    }, function(url){
+      tempFiles[prefix].push({ name:file.name, url:url });
+      row.innerHTML = '<i class="fa-solid fa-circle-check"></i><span class="dfi-name">'+escapeHtmlGlobal(file.name)+'</span><div class="dfi-del" onclick="this.closest(\'.deliv-file-item\').remove();removeTempFile(\''+prefix+'\',\''+url+'\')"><i class="fa-solid fa-times"></i></div>';
+    }, function(err){
+      row.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="color:var(--red)"></i><span class="dfi-name">Failed: '+file.name+'</span>';
+    });
+  });
+}
+function removeTempFile(prefix, url){
+  tempFiles[prefix] = tempFiles[prefix].filter(function(f){ return f.url !== url; });
+}
+function escapeHtmlGlobal(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* VIDEO LIBRARY UPLOAD */
+function uploadVideos(files){
+  var arr = Array.from(files);
+  var pw = document.getElementById('vidProgress');
+  var pb = document.getElementById('vidBar');
+  var ps = document.getElementById('vidStatus');
+  pw.style.display = 'block'; ps.style.display = 'block';
+  function next(i){
+    if(i >= arr.length){
+      ps.textContent = '✅ All videos uploaded!';
+      setTimeout(function(){ pw.style.display='none'; ps.style.display='none'; pb.style.width='0%'; }, 1800);
+      renderAdminMedia();
+      showToast('Videos uploaded! Copy link from Media Library.', 'ok');
+      return;
+    }
+    ps.textContent = 'Uploading '+arr[i].name+'...';
+    uploadToCloudinary(arr[i], 'video', function(pct){ pb.style.width = pct+'%'; }, function(url){
+      var vids = getVideos();
+      vids.push({url:url, name:arr[i].name});
+      saveVideos(vids);
+      next(i+1);
+    }, function(err){
+      ps.textContent = '❌ Failed: '+err;
+      next(i+1);
+    });
+  }
+  next(0);
+}
+function handleVideoDrop(e){
+  e.preventDefault();
+  document.getElementById('vidDrop').classList.remove('drag');
+  uploadVideos(e.dataTransfer.files);
+}
+
+/* PHOTO LIBRARY UPLOAD */
+function uploadPhotos(files){
+  var arr = Array.from(files);
+  var pw = document.getElementById('photoProgress');
+  var pb = document.getElementById('photoBar');
+  var ps = document.getElementById('photoStatus');
+  pw.style.display = 'block'; ps.style.display = 'block';
+  function next(i){
+    if(i >= arr.length){
+      ps.textContent = '✅ All photos uploaded!';
+      setTimeout(function(){ pw.style.display='none'; ps.style.display='none'; pb.style.width='0%'; }, 1800);
+      renderAdminMedia();
+      showToast('Photos uploaded! Copy link from Media Library.', 'ok');
+      return;
+    }
+    ps.textContent = 'Uploading '+arr[i].name+'...';
+    uploadToCloudinary(arr[i], 'image', function(pct){ pb.style.width = pct+'%'; }, function(url){
+      var photos = getPhotos();
+      photos.push({url:url, name:arr[i].name});
+      savePhotos(photos);
+      next(i+1);
+    }, function(err){
+      ps.textContent = '❌ Failed: '+err;
+      next(i+1);
+    });
+  }
+  next(0);
+}
+function handlePhotoDrop(e){
+  e.preventDefault();
+  document.getElementById('photoDrop').classList.remove('drag');
+  uploadPhotos(e.dataTransfer.files);
+}
+
+function renderAdminMedia(){
+  var vg = document.getElementById('adminVidGallery');
+  var pg = document.getElementById('adminPhotoGallery');
+  var vids = getVideos(), photos = getPhotos();
+  vg.innerHTML = vids.map(function(v,i){
+    return '<div class="ag-item"><video src="'+v.url+'#t=0.5" preload="metadata" onclick="copyLink(\''+v.url+'\')" style="cursor:pointer"></video>'+
+      '<div class="ag-del" onclick="delVideo('+i+')"><i class="fa-solid fa-times"></i></div></div>';
+  }).join('') || '<p style="font-size:11px;color:var(--t3);grid-column:1/-1">No videos yet</p>';
+  pg.innerHTML = photos.map(function(p,i){
+    return '<div class="ag-item"><img src="'+p.url+'" onclick="copyLink(\''+p.url+'\')" style="cursor:pointer">'+
+      '<div class="ag-del" onclick="delPhoto('+i+')"><i class="fa-solid fa-times"></i></div></div>';
+  }).join('') || '<p style="font-size:11px;color:var(--t3);grid-column:1/-1">No photos yet</p>';
+}
+function delVideo(i){ var v=getVideos(); v.splice(i,1); saveVideos(v); renderAdminMedia(); showToast('Video deleted','ok'); }
+function delPhoto(i){ var p=getPhotos(); p.splice(i,1); savePhotos(p); renderAdminMedia(); showToast('Photo deleted','ok'); }
+function copyLink(url){
+  navigator.clipboard.writeText(url).then(function(){ showToast('Link copied!','ok'); }).catch(function(){ showToast('Could not copy — long-press to copy manually','err'); });
+}
+
+/* ══════════════════════════════════════
+   ADD COURSE / PRODUCT
+══════════════════════════════════════ */
+function addCourse(){
+  var title = document.getElementById('crsTitle').value.trim();
+  var desc  = document.getElementById('crsDesc').value.trim();
+  var price = parseFloat(document.getElementById('crsPrice').value);
+  if(!title || isNaN(price)){ showToast('Please enter a title and price','err'); return; }
+  if(!tempFiles.crs.length){ showToast('Please upload at least one course file before adding','err'); return; }
+  var courses = getCourses();
+  courses.push({
+    id:'crs_'+Date.now(), title:title, desc:desc, price:price,
+    thumb:thumbUrls.crs,
+    files: tempFiles.crs.slice(),
+    previewVideo: previewData.crs.video,
+    previewImages: previewData.crs.images.slice()
+  });
+  saveCourses(courses);
+  thumbUrls.crs = '';
+  previewData.crs = { video:'', images:[] };
+  tempFiles.crs = [];
+  document.getElementById('crsTitle').value = '';
+  document.getElementById('crsDesc').value = '';
+  document.getElementById('crsPrice').value = '';
+  document.getElementById('crsThumbPreview').innerHTML = '';
+  document.getElementById('crsPrevVideoPreview').innerHTML = '';
+  document.getElementById('crsPrevImagesPreview').innerHTML = '';
+  document.getElementById('crsFilesPreview').innerHTML = '';
+  renderStore();
+  showToast('Course added!', 'ok');
+}
+function addProduct(){
+  var title = document.getElementById('prdTitle').value.trim();
+  var desc  = document.getElementById('prdDesc').value.trim();
+  var price = parseFloat(document.getElementById('prdPrice').value);
+  if(!title || isNaN(price)){ showToast('Please enter a title and price','err'); return; }
+  if(!tempFiles.prd.length){ showToast('Please upload at least one product file before adding','err'); return; }
+  var products = getProducts();
+  products.push({
+    id:'prd_'+Date.now(), title:title, desc:desc, price:price,
+    thumb:thumbUrls.prd,
+    files: tempFiles.prd.slice(),
+    previewVideo: previewData.prd.video,
+    previewImages: previewData.prd.images.slice()
+  });
+  saveProducts(products);
+  thumbUrls.prd = '';
+  previewData.prd = { video:'', images:[] };
+  tempFiles.prd = [];
+  document.getElementById('prdTitle').value = '';
+  document.getElementById('prdDesc').value = '';
+  document.getElementById('prdPrice').value = '';
+  document.getElementById('prdThumbPreview').innerHTML = '';
+  document.getElementById('prdPrevVideoPreview').innerHTML = '';
+  document.getElementById('prdPrevImagesPreview').innerHTML = '';
+  document.getElementById('prdFilesPreview').innerHTML = '';
+  renderStore();
+  showToast('Product added!', 'ok');
+}
+function delCourse(id){ var c=getCourses().filter(function(x){return x.id!==id}); saveCourses(c); renderStore(); showToast('Course removed','ok'); }
+function delProduct(id){ var p=getProducts().filter(function(x){return x.id!==id}); saveProducts(p); renderStore(); showToast('Product removed','ok'); }
+
+/* ══════════════════════════════════════
+   RENDER STORE
+══════════════════════════════════════ */
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function storeCard(item, type){
+  var owned = isOwned(item.id);
+  var thumb = item.thumb
+    ? '<img src="'+item.thumb+'" alt="'+escapeHtml(item.title)+'">'
+    : '<i class="fa-solid fa-'+(type==='course'?'graduation-cap':'box-open')+' placeholder-icon"></i>';
+  var mainBtn = owned
+    ? '<button class="store-buy-btn owned" onclick="openAccess(\''+item.id+'\',\''+type+'\')"><i class="fa-solid fa-circle-check"></i> Access Now</button>'
+    : '<button class="store-buy-btn" onclick="buyItem(\''+item.id+'\',\''+type+'\')"><i class="fa-solid fa-unlock"></i> Get Access</button>';
+  var hasPreview = item.previewVideo || (item.previewImages && item.previewImages.length);
+  var previewBtn = hasPreview && !owned
+    ? '<button class="store-preview-btn" onclick="openPreview(\''+item.id+'\',\''+type+'\')"><i class="fa-solid fa-eye"></i> Preview</button>'
+    : '';
+  return '<div class="store-card">'+
+    '<div class="store-thumb">'+thumb+'<span class="store-badge-tag">'+(type==='course'?'Course':'Digital Product')+'</span></div>'+
+    '<div class="store-body">'+
+      '<div class="store-title">'+escapeHtml(item.title)+'</div>'+
+      '<div class="store-desc">'+escapeHtml(item.desc)+'</div>'+
+      '<div class="store-foot"><span class="store-price">$'+item.price.toFixed(2)+'</span>'+
+        '<div class="store-card-actions">'+previewBtn+mainBtn+'</div>'+
+      '</div>'+
+    '</div></div>';
+}
+
+function renderStore(){
+  var courses = getCourses();
+  var products = getProducts();
+  var cg = document.getElementById('courseGrid');
+  var pg = document.getElementById('productGrid');
+  cg.innerHTML = courses.length
+    ? courses.map(function(c){ return storeCard(c,'course'); }).join('')
+    : '<div class="store-empty"><i class="fa-solid fa-graduation-cap"></i><p>No courses listed yet</p></div>';
+  pg.innerHTML = products.length
+    ? products.map(function(p){ return storeCard(p,'product'); }).join('')
+    : '<div class="store-empty"><i class="fa-solid fa-box-open"></i><p>No products listed yet</p></div>';
+  renderAdminStoreLists();
+}
+
+function renderAdminStoreLists(){
+  var cg = document.getElementById('adminCourseGallery');
+  var pg = document.getElementById('adminProductGallery');
+  var courses = getCourses();
+  var products = getProducts();
+  cg.innerHTML = courses.map(function(c){
+    return '<div class="ag-item">'+(c.thumb?'<img src="'+c.thumb+'">':'<div class="ag-fallback">'+escapeHtml(c.title)+'</div>')+
+      '<div class="ag-del" onclick="delCourse(\''+c.id+'\')"><i class="fa-solid fa-times"></i></div></div>';
+  }).join('') || '<p style="font-size:11px;color:var(--t3);grid-column:1/-1">No courses yet</p>';
+  pg.innerHTML = products.map(function(p){
+    return '<div class="ag-item">'+(p.thumb?'<img src="'+p.thumb+'">':'<div class="ag-fallback">'+escapeHtml(p.title)+'</div>')+
+      '<div class="ag-del" onclick="delProduct(\''+p.id+'\')"><i class="fa-solid fa-times"></i></div></div>';
+  }).join('') || '<p style="font-size:11px;color:var(--t3);grid-column:1/-1">No products yet</p>';
+}
+
+/* ══════════════════════════════════════
+   PREVIEW MODAL (video + image gallery — shown before purchase, hosted on this site)
+══════════════════════════════════════ */
+function openPreview(id, type){
+  var list = type==='course' ? getCourses() : getProducts();
+  var item = list.filter(function(x){ return x.id===id; })[0];
+  if(!item) return;
+  document.getElementById('pvTitle').textContent = item.title;
+  var html = '';
+  if(item.previewVideo){
+    html += '<div class="pv-video-wrap"><video src="'+item.previewVideo+'" controls playsinline></video></div>';
+  }
+  if(item.previewImages && item.previewImages.length){
+    html += '<div class="pv-gallery">'+item.previewImages.map(function(url){
+      return '<img src="'+url+'" onclick="window.open(this.src,\'_blank\')" alt="preview">';
+    }).join('')+'</div>';
+  }
+  if(!item.previewVideo && (!item.previewImages || !item.previewImages.length)){
+    html += '<div class="pv-empty-note">No preview media for this item yet.</div>';
+  }
+  html += '<div class="pv-foot">'+
+    '<span class="pv-price">$'+item.price.toFixed(2)+'</span>'+
+    '<button class="pv-get-btn" onclick="closePreview();buyItem(\''+item.id+'\',\''+type+'\')"><i class="fa-solid fa-unlock"></i> Get Access — $'+item.price.toFixed(2)+'</button>'+
+  '</div>';
+  document.getElementById('pvBody').innerHTML = html;
+  document.getElementById('pvOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePreview(){
+  document.getElementById('pvOverlay').classList.remove('open');
+  document.getElementById('pvBody').innerHTML = '';
+  document.body.style.overflow = '';
+}
+function pvOverlayClick(e){ if(e.target === document.getElementById('pvOverlay')) closePreview(); }
+
+/* ══════════════════════════════════════
+   ACCESS MODAL (post-purchase file delivery — files hosted on this site)
+══════════════════════════════════════ */
+function openAccess(id, type){
+  var list = type==='course' ? getCourses() : getProducts();
+  var item = list.filter(function(x){ return x.id===id; })[0];
+  if(!item) return;
+  document.getElementById('acTitle').textContent = item.title;
+  var html = '';
+  if(item.files && item.files.length){
+    html += item.files.map(function(f){
+      return '<div class="ac-file-row">'+
+        '<div class="ac-file-icon"><i class="fa-solid fa-file-circle-check"></i></div>'+
+        '<div class="ac-file-name">'+escapeHtmlGlobal(f.name)+'</div>'+
+        '<a href="'+f.url+'" target="_blank" class="ac-dl-link"><i class="fa-solid fa-download"></i> Open</a>'+
+      '</div>';
+    }).join('');
+  } else if(item.link){
+    html += '<div class="ac-file-row"><div class="ac-file-icon"><i class="fa-solid fa-link"></i></div>'+
+      '<div class="ac-file-name">Access Link</div>'+
+      '<a href="'+item.link+'" target="_blank" class="ac-dl-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a></div>';
+  } else {
+    html += '<p style="font-size:13px;color:var(--t3);text-align:center;padding:20px 0">No files attached yet. Please contact support.</p>';
+  }
+  document.getElementById('acBody').innerHTML = html;
+  document.getElementById('acOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeAccess(){
+  document.getElementById('acOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function acOverlayClick(e){ if(e.target === document.getElementById('acOverlay')) closeAccess(); }
+
+/* ══════════════════════════════════════
+   CHECKOUT (dynamic per item)
+══════════════════════════════════════ */
+function buyItem(id, type){
+  var list = type==='course' ? getCourses() : getProducts();
+  var item = list.filter(function(x){ return x.id===id; })[0];
+  if(!item) return;
+  currentCheckoutItem = { id:item.id, title:item.title, price:item.price, link:item.link, type:type };
+  document.getElementById('coIcon').textContent = type==='course' ? '🎓' : '📦';
+  document.getElementById('coPname').textContent = item.title;
+  document.getElementById('coPbrand').textContent = type==='course' ? 'NexaVault Course' : 'NexaVault Digital Product';
+  document.getElementById('coPprice').textContent = '$'+item.price.toFixed(2);
+  document.getElementById('rzpAmountLabel').textContent = '₹'+Math.round(item.price*USD_TO_INR)+' (~$'+item.price.toFixed(2)+')';
+  resetCheckoutUI();
+  openCheckout();
+}
+function openCheckout(){
+  document.getElementById('coOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCheckout(){
+  document.getElementById('coOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function coOverlayClick(e){ if(e.target === document.getElementById('coOverlay')) closeCheckout(); }
+function switchCoTab(tab, el){
+  document.querySelectorAll('.co-tab-btn').forEach(function(b){ b.classList.remove('act'); });
+  document.querySelectorAll('.co-pane').forEach(function(p){ p.classList.remove('act'); });
+  if(el) el.classList.add('act');
+  document.getElementById('pane-'+tab).classList.add('act');
+}
+function resetCheckoutUI(){
+  document.getElementById('coTabs').style.display = 'flex';
+  document.getElementById('coTabsBody').style.display = 'block';
+  document.getElementById('coTrustBar').style.display = 'flex';
+  document.getElementById('coSuccess').style.display = 'none';
+  switchCoTab('paypal', document.querySelector('.co-tab-btn'));
+}
+
+/* Called ONLY after a server function confirms the payment is genuine. */
+function grantAccess(){
+  if(currentCheckoutItem){
+    localStorage.setItem('nv_owned_'+currentCheckoutItem.id, '1');
+    var dlBtn = document.getElementById('coDownloadBtn');
+    dlBtn.onclick = function(e){ e.preventDefault(); closeCheckout(); openAccess(currentCheckoutItem.id, currentCheckoutItem.type); };
+    renderStore();
+    sendAccessEmail(currentCheckoutItem);
+  }
+  document.getElementById('coTabs').style.display = 'none';
+  document.getElementById('coTabsBody').style.display = 'none';
+  document.getElementById('coTrustBar').style.display = 'none';
+  document.getElementById('coSuccess').style.display = 'block';
+  showToast('🎉 Purchase verified — you\'re in!', 'ok');
+}
+
+/* Sends the buyer an email with their file links via EmailJS (client-side, only triggered after server-verified payment). */
+function sendAccessEmail(item){
+  if(typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') return;
+  if(!currentUser || !currentUser.email) return;
+  var list = item.type==='course' ? getCourses() : getProducts();
+  var full = list.filter(function(x){ return x.id===item.id; })[0];
+  var filesHtml = '';
+  var btnStyle = 'display:inline-block;background:#8B5CF6;color:#ffffff;text-decoration:none;' +
+    'padding:12px 22px;border-radius:8px;font-weight:700;font-size:14px;margin:6px 6px 6px 0;';
+  if(full && full.files && full.files.length){
+    filesHtml = full.files.map(function(f){
+      return '<a href="'+f.url+'" target="_blank" style="'+btnStyle+'">⬇ '+escapeHtmlGlobal(f.name)+'</a>';
+    }).join('<br>');
+  } else if(full && full.link){
+    filesHtml = '<a href="'+full.link+'" target="_blank" style="'+btnStyle+'">⬇ Access Your Content</a>';
+  }
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: currentUser.email,
+    item_title: item.title,
+    files_text: filesHtml,
+    site_url: window.location.origin
+  }).catch(function(){ /* email is a convenience, link is always on-site too */ });
+}
+
+/* PayPal — order is captured SERVER-SIDE via Netlify Function, never trusted client-side */
+function initPayPal(){
+  if(ppLoaded) return;
+  if(typeof paypal === 'undefined'){ setTimeout(initPayPal, 600); return; }
+  ppLoaded = true;
+  paypal.Buttons({
+    style:{ layout:'vertical', color:'gold', shape:'rect', label:'pay' },
+    createOrder:function(data, actions){
+      var amt = currentCheckoutItem ? currentCheckoutItem.price : 0;
+      var desc = currentCheckoutItem ? currentCheckoutItem.title : 'NexaVault Purchase';
+      return actions.order.create({ purchase_units:[{ amount:{ value: amt.toFixed(2), currency_code:'USD' }, description: desc }] });
+    },
+    onApprove:function(data){
+      showToast('Verifying payment with PayPal...', 'ok');
+      return fetch('/api/paypal-capture', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ orderID: data.orderID })
+      }).then(function(r){ return r.json(); }).then(function(res){
+        if(res.success){ grantAccess(); }
+        else { showToast('Payment could not be verified. ' + (res.error||''), 'err'); }
+      }).catch(function(){ showToast('Could not reach verification server.', 'err'); });
+    },
+    onError:function(){ showToast('PayPal error. Please try again.', 'err'); }
+  }).render('#paypal-btn-container');
+}
+
+/* Razorpay — order created server-side, signature verified server-side (real proof of payment) */
+function payRazorpay(){
+  if(typeof Razorpay === 'undefined'){ showToast('Loading Razorpay, try again...', 'err'); return; }
+  if(!currentCheckoutItem){ showToast('No item selected', 'err'); return; }
+  var amtInr = Math.round(currentCheckoutItem.price * USD_TO_INR);
+  showToast('Preparing secure payment...', 'ok');
+  fetch('/api/razorpay-create-order', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ amount: amtInr*100, currency:'INR' })
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if(!res.order_id){ showToast('Could not start payment: ' + (res.error||''), 'err'); return; }
+    var options = {
+      key: RZP_KEY,
+      order_id: res.order_id,
+      amount: res.amount,
+      currency: res.currency,
+      name: 'NexaVault',
+      description: currentCheckoutItem.title,
+      handler: function(resp){
+        showToast('Verifying payment...', 'ok');
+        fetch('/api/razorpay-verify', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({
+            razorpay_payment_id: resp.razorpay_payment_id,
+            razorpay_order_id: resp.razorpay_order_id,
+            razorpay_signature: resp.razorpay_signature
+          })
+        }).then(function(r){ return r.json(); }).then(function(v){
+          if(v.success){ grantAccess(); }
+          else { showToast('Payment could not be verified. ' + (v.error||''), 'err'); }
+        }).catch(function(){ showToast('Could not reach verification server.', 'err'); });
+      },
+      prefill: { email: currentUser ? (currentUser.email||'') : '' },
+      theme: { color: '#8B5CF6' }
+    };
+    var rzp = new Razorpay(options);
+    rzp.open();
+    rzp.on('payment.failed', function(){ showToast('Payment failed. Please try again.', 'err'); });
+  }).catch(function(){ showToast('Could not reach payment server.', 'err'); });
+}
+
+/* Card payments route through PayPal's own card checkout (see pane-card above) — no separate handler needed */
+
+/* ══════════════════════════════════════
+   LIGHTBOX (generic media viewer, optional use)
+══════════════════════════════════════ */
+function closeLb(e){
+  if(e && e.target !== document.getElementById('lbOverlay') && e.type === 'click') return;
+  document.getElementById('lbOverlay').classList.remove('open');
+  document.getElementById('lbBody').innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+/* ══════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════ */
+function toggleFaq(btn){
+  var item = btn.closest('.faq-item');
+  var open = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(function(i){ i.classList.remove('open'); });
+  if(!open) item.classList.add('open');
+}
+function initReveal(){
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(function(el){ obs.observe(el); });
+}
+function initScroll(){
+  window.addEventListener('scroll', function(){
+    var fb = document.getElementById('floatBuy');
+    if(window.scrollY > 400) fb.classList.add('show');
+    else fb.classList.remove('show');
+  });
+}
+function showToast(msg, type){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast '+(type||'ok')+' show';
+  setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ closeCheckout(); closeAdmin(); closeLb(); closePreview(); closeAccess(); }
+});
+</script>
+</body>
+</html>
